@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "127122623184",
+    "project_id": "firstmyapp-2025",
+    "storage_bucket": "firstmyapp-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:127122623184:android:20cab2c983b1d04cdbecd5",
+        "android_client_info": {
+          "package_name": "com.nithin.myappfirst"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANUxM8EtSiQsKmehi1G5osnZAMtq-YU2U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
