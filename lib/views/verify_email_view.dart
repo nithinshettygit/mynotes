@@ -8,36 +8,81 @@ class VerifyEmailView extends StatefulWidget {
   State<VerifyEmailView> createState() => _VerifyEmailViewState();
 }
 
-class _VerifyEmailViewState extends State<VerifyEmailView> {
+class _VerifyEmailViewState extends State<VerifyEmailView>
+    with WidgetsBindingObserver {
   bool isEmailSent = false;
 
   @override
   void initState() {
     super.initState();
+    // Automatically check if the email is already verified when opening the page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkIfEmailAlreadyVerified();
+    });
+    WidgetsBinding.instance.addObserver(this); // Observe app lifecycle changes
+  }
 
-    // Check if email is verified upon opening the view
+  @override
+  void dispose() {
+    WidgetsBinding.instance
+        .removeObserver(this); // Remove observer when disposed
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // When the app resumes, check if email is verified
+      _checkIfEmailAlreadyVerified();
+    }
+  }
+
+  Future<void> _checkIfEmailAlreadyVerified() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.emailVerified) {
-      // If email is already verified, navigate away or show appropriate UI
-      // You can navigate to another page or show a message
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacementNamed('/home'); // Example route
-      });
+    if (user != null) {
+      await user
+          .reload(); // Refresh the user data to get updated verification status
+      if (user.emailVerified) {
+        Navigator.of(context).pushReplacementNamed(
+            '/home'); // Navigate to the home page if verified
+      }
     }
   }
 
   Future<void> sendEmailVerification() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await user.sendEmailVerification();
-      setState(() {
-        isEmailSent = true;
-      });
+      try {
+        await user.sendEmailVerification();
+        setState(() {
+          isEmailSent = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Verification email sent! Check your inbox.')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending email: $e')),
+        );
+      }
+    }
+  }
 
-      // Show a snackbar to inform the user
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Verification email sent!')),
-      );
+  Future<void> checkEmailVerified() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await user.reload(); // Refresh the user data
+      if (user.emailVerified) {
+        Navigator.of(context).pushReplacementNamed(
+            '/home'); // Navigate to the home page if verified
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Email is not yet verified. Please try again.')),
+        );
+      }
     }
   }
 
@@ -52,13 +97,25 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Please verify your email address'),
+            const Text(
+              'A verification email has been sent to your email address. Please verify it.',
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
-            if (isEmailSent)
-              const Text('A verification email has been sent to your inbox.'),
-            TextButton(
-              onPressed: sendEmailVerification,
-              child: const Text('Send Email Verification'),
+            if (!isEmailSent)
+              ElevatedButton(
+                onPressed: sendEmailVerification,
+                child: const Text('Send Verification Email'),
+              ),
+            ElevatedButton(
+              onPressed: checkEmailVerified,
+              child: const Text('I Have Verified My Email'),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Note: Check your spam folder if you do not see the email.',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

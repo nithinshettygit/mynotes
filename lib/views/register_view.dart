@@ -23,7 +23,6 @@ class _RegisterViewState extends State<RegisterView> {
   void dispose() {
     _email.dispose();
     _password.dispose();
-
     super.dispose();
   }
 
@@ -40,14 +39,14 @@ class _RegisterViewState extends State<RegisterView> {
             enableSuggestions: true,
             autocorrect: false,
             keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(hintText: 'Enter your email here'),
+            decoration: const InputDecoration(hintText: 'Enter your email'),
           ),
           TextField(
             controller: _password,
             obscureText: true,
             enableSuggestions: false,
             autocorrect: false,
-            decoration: InputDecoration(hintText: 'Enter your password here'),
+            decoration: const InputDecoration(hintText: 'Enter your password'),
           ),
           TextButton(
             onPressed: () async {
@@ -57,7 +56,23 @@ class _RegisterViewState extends State<RegisterView> {
                 final userCredential = await FirebaseAuth.instance
                     .createUserWithEmailAndPassword(
                         email: email, password: password);
-                print('User registered: $userCredential');
+                final user = userCredential.user;
+
+                if (user != null) {
+                  // Send verification email
+                  await user.sendEmailVerification();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content:
+                            Text('Verification email sent! Check your inbox.')),
+                  );
+
+                  // Navigate to the VerifyEmailView to let the user check email
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/verify-email/',
+                    (route) => false,
+                  );
+                }
               } on FirebaseAuthException catch (e) {
                 switch (e.code) {
                   case 'weak-password':
@@ -71,7 +86,7 @@ class _RegisterViewState extends State<RegisterView> {
                     print('Error: The email address is invalid.');
                     break;
                   default:
-                    print('Error: An unknown error occurred. Code: ${e.code}');
+                    print('Error: An unknown error occurred.');
                 }
               } catch (e) {
                 print('Error: An unexpected error occurred.');
@@ -87,7 +102,7 @@ class _RegisterViewState extends State<RegisterView> {
               );
             },
             child: const Text('Already registered? Login here!'),
-          )
+          ),
         ],
       ),
     );

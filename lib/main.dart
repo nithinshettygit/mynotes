@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:myappfirst/constants/routes.dart';
 import 'package:myappfirst/firebase_options.dart';
 import 'package:myappfirst/views/login_view.dart';
 import 'package:myappfirst/views/register_view.dart';
@@ -15,13 +16,16 @@ void main() async {
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 15, 6, 119)),
+          seedColor: const Color.fromARGB(255, 15, 6, 119),
+        ),
         useMaterial3: false,
       ),
       home: const HomePage(),
       routes: {
-        '/login/': (context) => const LoginView(),
-        '/register/': (context) => const RegisterView(),
+        loginRoute: (context) => const LoginView(),
+        registerRoute: (context) => const RegisterView(),
+        '/verify-email/': (context) => const VerifyEmailView(),
+        notesRoute: (context) => const NotesView(),
       },
     ),
   );
@@ -46,15 +50,28 @@ class _HomePageState extends State<HomePage> {
           case ConnectionState.done:
             final user = FirebaseAuth.instance.currentUser;
             if (user != null) {
-              if (user.emailVerified) {
-                return const NotesView();
-              } else {
-                return const VerifyEmailView();
-              }
+              // Reload user to ensure emailVerified is up-to-date
+              return FutureBuilder(
+                future: user.reload(), // Refresh user state
+                builder: (context, reloadSnapshot) {
+                  if (reloadSnapshot.connectionState == ConnectionState.done) {
+                    final updatedUser = FirebaseAuth.instance.currentUser;
+                    if (updatedUser != null && updatedUser.emailVerified) {
+                      // If user is verified, go to NotesView
+                      return const NotesView();
+                    } else {
+                      // If user is not verified, go to VerifyEmailView
+                      return const VerifyEmailView();
+                    }
+                  } else {
+                    return const CircularProgressIndicator();
+                  }
+                },
+              );
             } else {
-              return LoginView();
+              // If no user is logged in, go to LoginView
+              return const LoginView();
             }
-
           default:
             return const CircularProgressIndicator();
         }
@@ -87,7 +104,7 @@ class _NotesViewState extends State<NotesView> {
                   if (shouldLogout) {
                     await FirebaseAuth.instance.signOut();
                     Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/login/',
+                      loginRoute,
                       (_) => false,
                     );
                   }
@@ -104,7 +121,9 @@ class _NotesViewState extends State<NotesView> {
           )
         ],
       ),
-      body: const Text('Heello World!!!'),
+      body: const Center(
+        child: Text('Welcome to the Notes App!'),
+      ),
     );
   }
 }
