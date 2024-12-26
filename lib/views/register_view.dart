@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:myappfirst/constants/routes.dart';
+import 'package:myappfirst/utilities/show_error_dialogue.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -53,43 +55,43 @@ class _RegisterViewState extends State<RegisterView> {
               final email = _email.text.trim();
               final password = _password.text.trim();
               try {
-                final userCredential = await FirebaseAuth.instance
-                    .createUserWithEmailAndPassword(
-                        email: email, password: password);
-                final user = userCredential.user;
+                await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                    email: email, password: password);
+                final user = FirebaseAuth.instance.currentUser;
+                await user?.sendEmailVerification();
 
-                if (user != null) {
-                  // Send verification email
-                  await user.sendEmailVerification();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content:
-                            Text('Verification email sent! Check your inbox.')),
-                  );
-
-                  // Navigate to the VerifyEmailView to let the user check email
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/verify-email/',
-                    (route) => false,
-                  );
-                }
+                Navigator.of(context).pushNamed(verifyEmailRoute);
               } on FirebaseAuthException catch (e) {
                 switch (e.code) {
                   case 'weak-password':
-                    print('Error: The password is too weak.');
+                    await showErrorDialog(
+                      context,
+                      'Weak Password',
+                    );
                     break;
                   case 'email-already-in-use':
-                    print(
-                        'Error: The email is already in use by another account.');
+                    await showErrorDialog(
+                      context,
+                      'Email already in use',
+                    );
                     break;
                   case 'invalid-email':
-                    print('Error: The email address is invalid.');
+                    await showErrorDialog(
+                      context,
+                      'Invalid email adress',
+                    );
                     break;
                   default:
-                    print('Error: An unknown error occurred.');
+                    await showErrorDialog(
+                      context,
+                      'Unknown error occured',
+                    );
                 }
               } catch (e) {
-                print('Error: An unexpected error occurred.');
+                await showErrorDialog(
+                  context,
+                  e.toString(),
+                );
               }
             },
             child: const Text('Register'),
