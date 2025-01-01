@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:myappfirst/firebase_options.dart';
 import 'package:myappfirst/views/services/auth/auth_user.dart';
 import 'package:myappfirst/views/services/auth/auth_provider.dart';
-
 import 'package:myappfirst/views/services/auth/auth_exceptions.dart';
 import 'package:firebase_auth/firebase_auth.dart'
     show FirebaseAuth, FirebaseAuthException;
@@ -40,10 +40,8 @@ class FirebaseAuthProvider implements AuthProvider {
   }
 
   @override
-  // TODO: implement currentUser
   AuthUser? get currentUser {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       return AuthUser.fromFirebase(user);
     } else {
@@ -83,15 +81,11 @@ class FirebaseAuthProvider implements AuthProvider {
 
   @override
   Future<void> logOut() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    try {
       await FirebaseAuth.instance.signOut();
-    } else {
-      throw UserNotLoggedInAuthException();
+    } catch (e) {
+      throw GenericAuthException(); // Handle the error if needed
     }
-
-    // TODO: implement logOut
-    throw UnimplementedError();
   }
 
   @override
@@ -102,6 +96,25 @@ class FirebaseAuthProvider implements AuthProvider {
     } else {
       throw UserNotLoggedInAuthException();
     }
-    throw UnimplementedError();
   }
+
+  @override
+  Future<void> initialize() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      throw FirebaseInitializationException(
+          'Firebase initialization failed: $e');
+    }
+  }
+}
+
+class FirebaseInitializationException implements Exception {
+  final String message;
+  FirebaseInitializationException(this.message);
+
+  @override
+  String toString() => 'FirebaseInitializationException: $message';
 }
