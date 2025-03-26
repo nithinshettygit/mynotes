@@ -1,2 +1,1 @@
-# mynotes
-My Notes Flutter Application
+# marks
